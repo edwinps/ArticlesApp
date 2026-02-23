@@ -6,17 +6,18 @@
 
 import Foundation
 
-final class ArticlesRepositoryImpl: ArticlesRepository, @unchecked Sendable {
+final class ArticlesRepositoryImpl: ArticlesRepository {
     private let api: ArticlesAPI
     private let store: ArticlesStore
-
-    private let perPage = 20
-    private var currentPage = 1
-    private var hasMore = true
+    private let perPageDefault = 20
 
     init(api: ArticlesAPI, store: ArticlesStore) {
         self.api = api
         self.store = store
+    }
+
+    func observeArticles(searchText: String?, author: String?) -> AsyncStream<[Article]> {
+        store.observeArticles(searchText: searchText, author: author)
     }
 
     func observeArticles() -> AsyncStream<[Article]> {
@@ -27,21 +28,8 @@ final class ArticlesRepositoryImpl: ArticlesRepository, @unchecked Sendable {
         store.observeArticle(id: id)
     }
 
-    func fetchArticles(forceRefresh: Bool) async throws {
-        if forceRefresh {
-            currentPage = 1
-            hasMore = true
-        }
-
-        guard hasMore else { return }
-
-        let pageToFetch = currentPage
-        let dtos = try await api.fetchArticles(page: pageToFetch, perPage: perPage)
-
-        if dtos.isEmpty {
-            hasMore = false
-            return
-        }
+    func fetchArticles(page: Int, perPage: Int) async throws {
+        let dtos = try await api.fetchArticles(page: page, perPage: perPage)
 
         let articles = dtos.map { dto in
             Article(
@@ -49,32 +37,24 @@ final class ArticlesRepositoryImpl: ArticlesRepository, @unchecked Sendable {
                 title: dto.title,
                 summary: dto.summary,
                 author: dto.authorName,
-                publishedAt: dto.publishedAt ?? Date(),
+                publishedAt: dto.publishedAt ?? .distantPast,
                 content: Self.preferredContentString(markdown: dto.bodyMarkdown, html: dto.bodyHTML)
             )
         }
 
         try await store.upsert(articles: articles)
-
-        if dtos.count < perPage {
-            hasMore = false
-        } else {
-            currentPage += 1
-        }
     }
 
     func fetchArticleDetail(id: String) async throws {
         let dto = try await api.fetchArticleDetail(id: id)
-
-        let content = Self.preferredContentString(markdown: dto.bodyMarkdown, html: dto.bodyHTML)
 
         let article = Article(
             id: String(dto.id),
             title: dto.title,
             summary: dto.summary,
             author: dto.authorName,
-            publishedAt: dto.publishedAt ?? Date(),
-            content: content
+            publishedAt: dto.publishedAt ?? .distantPast,
+            content: Self.preferredContentString(markdown: dto.bodyMarkdown, html: dto.bodyHTML)
         )
 
         try await store.upsert(detail: article)
@@ -88,4 +68,3 @@ private extension ArticlesRepositoryImpl {
         return ""
     }
 }
-

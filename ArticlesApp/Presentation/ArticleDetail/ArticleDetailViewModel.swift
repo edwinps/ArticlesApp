@@ -1,126 +1,123 @@
-// Features/ArticleDetail/ArticleDetailViewModel.swift
-
 import Foundation
 import Observation
 
 enum ArticleDetailState: Equatable, Sendable {
+    case idle
     case loading
-    case content
-    case missingOffline
     case error(String)
 }
 
 @MainActor
 @Observable
 final class ArticleDetailViewModel {
-    enum Event: Sendable {
-        case start
-        case stop
-        case refresh
-    }
+    enum Event: Sendable { case start, stop, refresh }
 
-    var article: Article?
-    var state: ArticleDetailState = .loading
+    var article: Article? = nil
+    var state: ArticleDetailState = .idle
+    var isMissingOffline: Bool = false
 
     let articleId: String
-
     private let repository: ArticlesRepository
-    private var observeTask: Task<Void, Never>?
-    private var autoRefreshTask: Task<Void, Never>?
-    private var didAutoRefresh = false
+    private let logger: AppLogger
 
-    init(articleId: String, repository: ArticlesRepository) {
+    private var articleObserveTask: Task<Void, Never>?
+    private var didPerformAutoRefresh = false
+    private var hasStartedObserving = false
+    private var isRefreshing = false
+
+    init(articleId: String, repository: ArticlesRepository, logger: AppLogger = DefaultLogger.shared) {
         self.articleId = articleId
         self.repository = repository
+        self.logger = logger
     }
 
     func send(_ event: Event) async {
         switch event {
-        case .start:
-            start()
-        case .stop:
-            stop()
-        case .refresh:
-            await refresh()
+        case .start: start()
+        case .stop: stop()
+        case .refresh: await refresh(isAutomatic: false)
         }
     }
 }
 
 private extension ArticleDetailViewModel {
     func start() {
-        observeTask?.cancel()
-        autoRefreshTask?.cancel()
+        guard !hasStartedObserving else { return }
+        hasStartedObserving = true
 
-        let repository = self.repository
-        let id = self.articleId
+        articleObserveTask?.cancel()
+        didPerformAutoRefresh = false
+        isRefreshing = false
+        state = .idle
+        isMissingOffline = false
 
-        observeTask = Task { [weak self] in
-            for await item in repository.observeArticle(id: id) {
-                guard let self else { return }
-                self.article = item
+        logger.info("ArticleDetailViewModel.start observing id=\(articleId)")
 
-                if let item {
-                    self.state = .content
-                    if item.content.isEmpty {
-                        await self.tryAutoRefreshIfNeeded()
-                    }
+        articleObserveTask = Task { [weak self] in
+            guard let self else { return }
+            for await article in self.repository.observeArticle(id: self.articleId) {
+                self.article = article
+                self.isMissingOffline = (article == nil)
+
+                if let article {
+                    self.logger.debug("Observed article id=\(article.id) contentEmpty=\(article.content.isEmpty)")
                 } else {
-                    self.state = .missingOffline
+                    self.logger.debug("Observed article is nil (not cached offline) id=\(self.articleId)")
+                }
+
+                if let article, article.content.isEmpty, !self.didPerformAutoRefresh {
+                    self.didPerformAutoRefresh = true
+                    self.logger.info("Auto-refresh triggered due to missing content id=\(self.articleId)")
+                    Task { [weak self] in
+                        await self?.refresh(isAutomatic: true)
+                    }
                 }
             }
         }
     }
 
     func stop() {
-        observeTask?.cancel()
-        observeTask = nil
-
-        autoRefreshTask?.cancel()
-        autoRefreshTask = nil
+        logger.info("ArticleDetailViewModel.stop observing id=\(articleId)")
+        articleObserveTask?.cancel()
+        articleObserveTask = nil
+        hasStartedObserving = false
     }
 
-    func refresh() async {
+    private func refresh(isAutomatic: Bool) async {
+        guard !isRefreshing else {
+            logger.debug("Refresh skipped (already in progress) id=\(articleId)")
+            return
+        }
+        isRefreshing = true
+        logger.info("Refresh begin id=\(articleId) automatic=\(isAutomatic)")
+        state = .loading
+
+        defer {
+            isRefreshing = false
+            if case .loading = state { state = .idle }
+        }
+
         do {
             try await repository.fetchArticleDetail(id: articleId)
+            state = .idle
+            logger.info("Refresh success id=\(articleId)")
+        } catch is CancellationError {
+            logger.warning("Refresh cancelled id=\(articleId)")
+            state = .idle
         } catch let error as NetworkError {
             if case .offline = error {
-                if article == nil {
-                    state = .missingOffline
-                }
+                if article == nil { isMissingOffline = true }
+                state = .idle
+                logger.warning("Refresh offline id=\(articleId) cachedExists=\(article != nil)")
             } else {
-                if article == nil {
-                    state = .error(error.localizedDescription)
-                }
+                let message = error.localizedDescription
+                state = .error(message)
+                logger.error(error, message: "Refresh failed (NetworkError) id=\(articleId)")
             }
         } catch {
-            if article == nil {
-                state = .error(error.localizedDescription)
-            }
-        }
-    }
-
-    func tryAutoRefreshIfNeeded() async {
-        guard !didAutoRefresh else { return }
-        guard let current = article, current.content.isEmpty else { return }
-        guard autoRefreshTask == nil else { return }
-
-        didAutoRefresh = true
-        autoRefreshTask = Task { [weak self] in
-            guard let self else { return }
-            defer { Task { @MainActor in self.autoRefreshTask = nil } }
-            do {
-                try await self.repository.fetchArticleDetail(id: self.articleId)
-            } catch let error as NetworkError {
-                if case .offline = error {
-                    return
-                } else if self.article == nil {
-                    await MainActor.run { self.state = .error(error.localizedDescription) }
-                }
-            } catch {
-                if self.article == nil {
-                    await MainActor.run { self.state = .error(error.localizedDescription) }
-                }
-            }
+            let message = error.localizedDescription
+            state = .error(message)
+            logger.error(error, message: "Refresh failed (unknown) id=\(articleId)")
         }
     }
 }

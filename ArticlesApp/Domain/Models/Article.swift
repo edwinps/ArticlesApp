@@ -1,5 +1,3 @@
-// Domain/Models/Article.swift
-
 import Foundation
 
 struct Article: Sendable, Hashable {
@@ -50,4 +48,3 @@ extension Article {
         )
     }
 }
-

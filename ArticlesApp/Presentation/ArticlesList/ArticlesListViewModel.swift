@@ -18,41 +18,60 @@ final class ArticlesListViewModel {
         case loadMore
     }
 
-    // Estado público único
     var state: ArticlesListState = .loading
-
-    // MARK: - Search
     var searchQuery: String = "" {
-        didSet { recomputeState() }
+        didSet {
+            logger.debug("Search query changed '\(oldValue)' -> '\(searchQuery)'")
+            scheduleSearchDebounce()
+        }
     }
-
+    var authorFilter: String? {
+        didSet {
+            logger.info("Author filter changed to '\(authorFilter ?? "nil")'")
+            startArticlesObservation(normalizedQuery: normalizedQuery(searchQuery))
+        }
+    }
+    var availableAuthors: [String] {
+        Array(allAuthors).sorted()
+    }
+    
     private let repository: ArticlesRepository
-    private var observeTask: Task<Void, Never>?
-    private var isLoadingMore = false
-    private var didInitialSync = false
+    private let logger: AppLogger
 
-    // Colección completa interna (sin filtrar)
-    private var allArticles: [Article] = [] {
-        didSet { recomputeState() }
-    }
+    private var articlesObserveTask: Task<Void, Never>?
+    private var authorsObserveTask: Task<Void, Never>?
+    private var searchDebounceTask: Task<Void, Never>?
 
-    init(repository: ArticlesRepository) {
+    private var isLoadingNextPage = false
+    private var didPerformInitialFetch = false
+
+    private var currentPage: Int = 0
+    private let pageSize: Int = 20
+
+    private var allAuthors: Set<String> = []
+
+    init(repository: ArticlesRepository, logger: AppLogger = DefaultLogger.shared) {
         self.repository = repository
+        self.logger = logger
     }
 
     func makeDetailViewModel(id: String) -> ArticleDetailViewModel {
-        ArticleDetailViewModel(articleId: id, repository: repository)
+        ArticleDetailViewModel(articleId: id, repository: repository, logger: logger)
     }
 
     func send(_ event: Event) async {
         switch event {
         case .start:
+            logger.info("ArticlesListViewModel.start")
             start()
         case .stop:
+            logger.info("ArticlesListViewModel.stop")
             stop()
         case .refresh:
+            logger.info("ArticlesListViewModel.refresh")
             await refresh()
         case .loadMore:
+            logger.info("ArticlesListViewModel.loadMore")
             await loadMore()
         }
     }
@@ -60,87 +79,129 @@ final class ArticlesListViewModel {
 
 private extension ArticlesListViewModel {
     func start() {
-        observeTask?.cancel()
+        startArticlesObservation(normalizedQuery: normalizedQuery(searchQuery))
+        startAuthorsObservation()
 
-        let repository = self.repository
-        observeTask = Task { [weak self] in
-            for await list in repository.observeArticles() {
-                guard let self else { return }
-                self.allArticles = list
-                if list.isEmpty {
-                    self.state = (self.didInitialSync ? .empty : .loading)
-                } else {
-                    // recomputeState() ya pone .loaded con el filtro aplicado
-                    self.recomputeState()
-                }
-            }
-        }
-
-        if !didInitialSync {
-            didInitialSync = true
+        if !didPerformInitialFetch {
+            didPerformInitialFetch = true
+            currentPage = 0
             Task {
-                try? await repository.fetchArticles(forceRefresh: true)
+                await fetchPage(1)
             }
         }
     }
 
     func stop() {
-        observeTask?.cancel()
-        observeTask = nil
+        articlesObserveTask?.cancel()
+        articlesObserveTask = nil
+
+        authorsObserveTask?.cancel()
+        authorsObserveTask = nil
+
+        searchDebounceTask?.cancel()
+        searchDebounceTask = nil
+
+        logger.debug("Observations cancelled")
     }
 
     func refresh() async {
+        currentPage = 0
+        await fetchPage(1)
+    }
+
+    func loadMore() async {
+        guard !isSearching else {
+            logger.debug("Skipping loadMore due to active search")
+            return
+        }
+        guard !isLoadingNextPage else { return }
+        isLoadingNextPage = true
+        defer { isLoadingNextPage = false }
+
+        let nextPage = currentPage + 1
+        await fetchPage(nextPage)
+    }
+
+    func fetchPage(_ page: Int) async {
         do {
-            try await repository.fetchArticles(forceRefresh: true)
+            logger.info("Fetching page \(page) pageSize=\(pageSize)")
+            try await repository.fetchArticles(page: page, perPage: pageSize)
+            currentPage = max(currentPage, page)
+            logger.debug("Fetch success page=\(page)")
+        } catch is CancellationError {
+            logger.warning("Fetch cancelled page=\(page)")
         } catch {
-            if allArticles.isEmpty {
+            logger.error(error, message: "Fetch failed page=\(page)")
+            if case .loaded(let items) = state, items.isEmpty {
+                state = .error(error.localizedDescription)
+            } else if case .loading = state {
                 state = .error(error.localizedDescription)
             }
         }
     }
 
-    func loadMore() async {
-        // No cargar más mientras hay búsqueda activa
-        guard !isSearching else { return }
-        guard !isLoadingMore else { return }
-        isLoadingMore = true
-        defer { isLoadingMore = false }
+    func startArticlesObservation(normalizedQuery: String) {
+        articlesObserveTask?.cancel()
 
-        do {
-            try await repository.fetchArticles(forceRefresh: false)
-        } catch { }
+        let repository = self.repository
+        let normalizedQueryOrNil = normalizedQuery.isEmpty ? nil : normalizedQuery
+        let normalizedAuthorFilter: String? = {
+            guard let authorFilter else { return nil }
+            let value = self.normalizedQuery(authorFilter)
+            return value.isEmpty ? nil : value
+        }()
+
+        logger.info("Start observing list query='\(normalizedQueryOrNil ?? "nil")' authorFilter='\(normalizedAuthorFilter ?? "nil")'")
+
+        articlesObserveTask = Task { [weak self] in
+            for await articles in repository.observeArticles(searchText: normalizedQueryOrNil, author: normalizedAuthorFilter) {
+                guard let self else { return }
+                if articles.isEmpty {
+                    self.state = (self.didPerformInitialFetch ? .empty : .loading)
+                    self.logger.debug("Observed empty list didInitialFetch=\(self.didPerformInitialFetch)")
+                } else {
+                    self.state = .loaded(articles)
+                    self.logger.debug("Observed list count=\(articles.count)")
+                }
+            }
+        }
     }
 
-    // MARK: - Filtering
+    func startAuthorsObservation() {
+        authorsObserveTask?.cancel()
+
+        let repository = self.repository
+        authorsObserveTask = Task { [weak self] in
+            for await articles in repository.observeArticles() {
+                guard let self else { return }
+                let newAuthors = Set(articles.map { $0.author })
+                let addedAuthors = newAuthors.subtracting(self.allAuthors)
+                self.allAuthors = newAuthors
+                if !addedAuthors.isEmpty {
+                    self.logger.debug("Authors updated total=\(self.allAuthors.count)")
+                }
+            }
+        }
+    }
+
+    func scheduleSearchDebounce() {
+        searchDebounceTask?.cancel()
+        let normalized = normalizedQuery(searchQuery)
+
+        searchDebounceTask = Task { [weak self] in
+            do {
+                try await Task.sleep(nanoseconds: 300_000_000)
+                self?.logger.debug("Search debounce fired query='\(normalized)'")
+                self?.startArticlesObservation(normalizedQuery: normalized)
+            } catch { }
+        }
+    }
+
+    func normalizedQuery(_ text: String) -> String {
+        text.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     var isSearching: Bool {
-        !searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
-
-    func recomputeState() {
-        // Si no hay artículos en absoluto, mantener empty/loading según corresponda
-        guard !allArticles.isEmpty else {
-            state = didInitialSync ? .empty : .loading
-            return
-        }
-
-        let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
-        let items: [Article]
-        if query.isEmpty {
-            items = allArticles
-        } else {
-            items = allArticles.filter { matches(article: $0, query: query) }
-        }
-        state = .loaded(items)
-    }
-
-    func matches(article: Article, query: String) -> Bool {
-        let q = query.folding(options: .diacriticInsensitive, locale: .current).lowercased()
-        func norm(_ s: String) -> String {
-            s.folding(options: .diacriticInsensitive, locale: .current).lowercased()
-        }
-        return norm(article.title).contains(q)
-            || norm(article.summary).contains(q)
-            || norm(article.author).contains(q)
+        !normalizedQuery(searchQuery).isEmpty
     }
 }
-

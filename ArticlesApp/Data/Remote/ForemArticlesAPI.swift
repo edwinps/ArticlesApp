@@ -1,13 +1,12 @@
-//
-//  ForemArticlesAPI.swift
-//  ArticlesApp
-//
-//
-
 import Foundation
 
 struct ForemArticlesAPI: ArticlesAPI {
     private let baseURLString = "https://dev.to/api/articles"
+    private let client: HTTPClient
+
+    init(client: HTTPClient = HTTPClient()) {
+        self.client = client
+    }
 
     func fetchArticles(page: Int, perPage: Int) async throws -> [ArticleDTO] {
         var components = URLComponents(string: baseURLString)
@@ -20,7 +19,6 @@ struct ForemArticlesAPI: ArticlesAPI {
             throw NetworkError.invalidURL
         }
 
-        let client = HTTPClient()
         return try await client.get(url)
     }
 
@@ -29,7 +27,6 @@ struct ForemArticlesAPI: ArticlesAPI {
             throw NetworkError.invalidURL
         }
 
-        let client = HTTPClient()
         return try await client.get(url)
     }
 }

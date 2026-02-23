@@ -2,11 +2,11 @@ import SwiftUI
 import Observation
 
 struct ArticlesListView: View {
-    @Bindable var viewModel: ArticlesListViewModel
+    @State var viewModel: ArticlesListViewModel
     @State private var didStart = false
 
     init(viewModel: ArticlesListViewModel) {
-        self._viewModel = Bindable(wrappedValue: viewModel)
+        _viewModel = State(initialValue: viewModel)
     }
 
     var body: some View {
@@ -46,13 +46,11 @@ struct ArticlesListView: View {
                 case .loaded(let items):
                     ZStack {
                         List(items, id: \.id) { article in
-                            NavigationLink {
-                                let detailVM = viewModel.makeDetailViewModel(id: article.id)
-                                ArticleDetailView(viewModel: detailVM)
-                            } label: {
+                            NavigationLink(value: article.id) {
                                 VStack(alignment: .leading, spacing: 6) {
                                     Text(article.title)
                                         .font(.headline)
+                                        .lineLimit(2)
                                     Text(article.summary)
                                         .font(.subheadline)
                                         .foregroundColor(.secondary)
@@ -77,8 +75,6 @@ struct ArticlesListView: View {
                         .refreshable {
                             await viewModel.send(.refresh)
                         }
-
-                        // Si hay artículos en la base pero el filtro devolvió 0
                         if items.isEmpty {
                             VStack(spacing: 8) {
                                 Text("No results")
@@ -93,8 +89,25 @@ struct ArticlesListView: View {
                     }
                 }
             }
+            .navigationDestination(for: String.self) { id in
+                ArticleDetailView(viewModel: viewModel.makeDetailViewModel(id: id))
+            }
             .navigationTitle("Articles")
             .searchable(text: $viewModel.searchQuery, prompt: "Search articles")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        Picker("Author", selection: $viewModel.authorFilter) {
+                            Text("All authors").tag(String?.none)
+                            ForEach(viewModel.availableAuthors, id: \.self) { author in
+                                Text(author).tag(Optional(author))
+                            }
+                        }
+                    } label: {
+                        Label("Filter", systemImage: "line.3.horizontal.decrease.circle")
+                    }
+                }
+            }
             .task {
                 guard !didStart else { return }
                 didStart = true
@@ -107,7 +120,7 @@ struct ArticlesListView: View {
     }
 }
 
-#Preview {
+#Preview("Light") {
     let store = RealmArticlesStore()
     let api = ForemArticlesAPI()
     let repo = ArticlesRepositoryImpl(api: api, store: store)
@@ -115,3 +128,11 @@ struct ArticlesListView: View {
     return ArticlesListView(viewModel: vm)
 }
 
+#Preview("Dark") {
+    let store = RealmArticlesStore()
+    let api = ForemArticlesAPI()
+    let repo = ArticlesRepositoryImpl(api: api, store: store)
+    let vm = ArticlesListViewModel(repository: repo)
+    return ArticlesListView(viewModel: vm)
+        .preferredColorScheme(.dark)
+}

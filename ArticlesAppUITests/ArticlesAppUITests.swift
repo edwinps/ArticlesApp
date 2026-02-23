@@ -2,7 +2,6 @@
 //  ArticlesAppUITests.swift
 //  ArticlesAppUITests
 //
- .
 //
 
 import XCTest

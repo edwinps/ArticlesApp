@@ -1,92 +1,44 @@
-// Features/ArticleDetail/ArticleDetailView.swift
-
 import SwiftUI
 import Observation
 
 struct ArticleDetailView: View {
-    @Bindable var viewModel: ArticleDetailViewModel
+    @State var viewModel: ArticleDetailViewModel
     @State private var didStart = false
 
     init(viewModel: ArticleDetailViewModel) {
-        self._viewModel = Bindable(wrappedValue: viewModel)
+        _viewModel = State(initialValue: viewModel)
     }
 
     var body: some View {
-        Group {
-            switch viewModel.state {
-            case .loading:
-                ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+        ZStack {
+            content
 
-            case .content:
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 12) {
-                        if let article = viewModel.article {
-                            Text(article.title)
-                                .font(.title)
-                                .fontWeight(.bold)
+            if case .loading = viewModel.state, viewModel.article != nil {
+                VStack {
+                    ProgressView()
+                        .padding(.top, 8)
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            }
 
-                            HStack(spacing: 8) {
-                                Text(article.author)
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                                Text(article.publishedAt, format: .dateTime.year().month().day())
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                            }
-
-                            Divider()
-
-                            if article.content.isEmpty {
-                                Text("Content not available offline yet.")
-                                    .font(.body)
-                                    .foregroundColor(.secondary)
-                            } else {
-                                Text(article.content)
-                                    .font(.body)
-                            }
-                        } else {
-                            Text("No article data available.")
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding()
+            if case .error(let message) = viewModel.state, viewModel.article != nil {
+                VStack {
+                    Text(message)
+                        .font(.caption)
+                        .foregroundColor(.white)
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 12)
+                        .background(.red.opacity(0.85))
+                        .clipShape(Capsule())
+                        .padding(.top, 8)
+                    Spacer()
                 }
-                .refreshable {
-                    await viewModel.send(.refresh)
-                }
-
-            case .missingOffline:
-                ScrollView {
-                    VStack(spacing: 12) {
-                        Text("This article is not available offline yet.")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .padding()
-                }
-                .refreshable {
-                    await viewModel.send(.refresh)
-                }
-
-            case .error(let message):
-                ScrollView {
-                    VStack(spacing: 12) {
-                        Text(message)
-                            .font(.headline)
-                            .foregroundColor(.red)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .padding()
-                }
-                .refreshable {
-                    await viewModel.send(.refresh)
-                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             }
         }
         .navigationTitle("Article")
+        .refreshable { await viewModel.send(.refresh) }
         .task {
             guard !didStart else { return }
             didStart = true
@@ -96,14 +48,77 @@ struct ArticleDetailView: View {
             Task { await viewModel.send(.stop) }
         }
     }
+
+    @ViewBuilder
+    private var content: some View {
+        if let article = viewModel.article {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(article.title)
+                        .font(.title)
+                        .fontWeight(.bold)
+                        .lineLimit(3)
+
+                    HStack(spacing: 8) {
+                        Text(article.author)
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        Text(article.publishedAt, format: .dateTime.year().month().day())
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+
+                    Divider()
+
+                    if article.content.isEmpty {
+                        Text("Content not available offline yet.")
+                            .foregroundColor(.secondary)
+                    } else {
+                        Text(article.content)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding()
+            }
+            .onDisappear {
+                Task { await viewModel.send(.stop) }
+            }
+
+        } else if viewModel.isMissingOffline {
+            ScrollView {
+                VStack(spacing: 12) {
+                    Text("This article is not available offline yet.")
+                        .font(.headline)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding()
+            }
+
+        } else {
+            ProgressView()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
 }
 
-#Preview {
+#Preview("Light") {
     let store = RealmArticlesStore()
     let api = ForemArticlesAPI()
     let repo = ArticlesRepositoryImpl(api: api, store: store)
     let vm = ArticleDetailViewModel(articleId: "preview-id", repository: repo)
-    return NavigationView {
+    return NavigationStack {
         ArticleDetailView(viewModel: vm)
+    }
+}
+
+#Preview("Dark") {
+    let store = RealmArticlesStore()
+    let api = ForemArticlesAPI()
+    let repo = ArticlesRepositoryImpl(api: api, store: store)
+    let vm = ArticleDetailViewModel(articleId: "preview-id", repository: repo)
+    return NavigationStack {
+        ArticleDetailView(viewModel: vm)
+            .preferredColorScheme(.dark)
     }
 }
