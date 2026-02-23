@@ -2,7 +2,7 @@
 //  ArticlesAppUITests.swift
 //  ArticlesAppUITests
 //
-//  Created by Edwinps on 22/2/26.
+ .
 //
 
 import XCTest
