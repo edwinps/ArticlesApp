@@ -19,13 +19,6 @@
 			remoteGlobalIDString = 73EC3B082F4B8A46005D3D67;
 			remoteInfo = ArticlesApp;
 		};
-		73EC3B232F4B8A47005D3D67 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 73EC3B012F4B8A46005D3D67 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 73EC3B082F4B8A46005D3D67;
-			remoteInfo = ArticlesApp;
-		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -43,9 +36,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		732E703C2F4DAB9100AD1EE8 /* ArticlesApp.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = ArticlesApp.xctestplan; sourceTree = "<group>"; };
 		73EC3B092F4B8A46005D3D67 /* ArticlesApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ArticlesApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		73EC3B182F4B8A47005D3D67 /* ArticlesAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ArticlesAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		73EC3B222F4B8A47005D3D67 /* ArticlesAppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ArticlesAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -57,11 +50,6 @@
 		73EC3B1B2F4B8A47005D3D67 /* ArticlesAppTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = ArticlesAppTests;
-			sourceTree = "<group>";
-		};
-		73EC3B252F4B8A47005D3D67 /* ArticlesAppUITests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = ArticlesAppUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -82,22 +70,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		73EC3B1F2F4B8A47005D3D67 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		73EC3B002F4B8A46005D3D67 = {
 			isa = PBXGroup;
 			children = (
+				732E703C2F4DAB9100AD1EE8 /* ArticlesApp.xctestplan */,
 				73EC3B0B2F4B8A46005D3D67 /* ArticlesApp */,
 				73EC3B1B2F4B8A47005D3D67 /* ArticlesAppTests */,
-				73EC3B252F4B8A47005D3D67 /* ArticlesAppUITests */,
 				73EC3B712F4BA061005D3D67 /* Frameworks */,
 				73EC3B0A2F4B8A46005D3D67 /* Products */,
 			);
@@ -108,7 +89,6 @@
 			children = (
 				73EC3B092F4B8A46005D3D67 /* ArticlesApp.app */,
 				73EC3B182F4B8A47005D3D67 /* ArticlesAppTests.xctest */,
-				73EC3B222F4B8A47005D3D67 /* ArticlesAppUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -170,29 +150,6 @@
 			productReference = 73EC3B182F4B8A47005D3D67 /* ArticlesAppTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		73EC3B212F4B8A47005D3D67 /* ArticlesAppUITests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 73EC3B322F4B8A47005D3D67 /* Build configuration list for PBXNativeTarget "ArticlesAppUITests" */;
-			buildPhases = (
-				73EC3B1E2F4B8A47005D3D67 /* Sources */,
-				73EC3B1F2F4B8A47005D3D67 /* Frameworks */,
-				73EC3B202F4B8A47005D3D67 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				73EC3B242F4B8A47005D3D67 /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				73EC3B252F4B8A47005D3D67 /* ArticlesAppUITests */,
-			);
-			name = ArticlesAppUITests;
-			packageProductDependencies = (
-			);
-			productName = ArticlesAppUITests;
-			productReference = 73EC3B222F4B8A47005D3D67 /* ArticlesAppUITests.xctest */;
-			productType = "com.apple.product-type.bundle.ui-testing";
-		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -208,10 +165,7 @@
 					};
 					73EC3B172F4B8A47005D3D67 = {
 						CreatedOnToolsVersion = 26.0.1;
-						TestTargetID = 73EC3B082F4B8A46005D3D67;
-					};
-					73EC3B212F4B8A47005D3D67 = {
-						CreatedOnToolsVersion = 26.0.1;
+						LastSwiftMigration = 2600;
 						TestTargetID = 73EC3B082F4B8A46005D3D67;
 					};
 				};
@@ -235,7 +189,6 @@
 			targets = (
 				73EC3B082F4B8A46005D3D67 /* ArticlesApp */,
 				73EC3B172F4B8A47005D3D67 /* ArticlesAppTests */,
-				73EC3B212F4B8A47005D3D67 /* ArticlesAppUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -249,13 +202,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		73EC3B162F4B8A47005D3D67 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		73EC3B202F4B8A47005D3D67 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -279,13 +225,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		73EC3B1E2F4B8A47005D3D67 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -293,11 +232,6 @@
 			isa = PBXTargetDependency;
 			target = 73EC3B082F4B8A46005D3D67 /* ArticlesApp */;
 			targetProxy = 73EC3B192F4B8A47005D3D67 /* PBXContainerItemProxy */;
-		};
-		73EC3B242F4B8A47005D3D67 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 73EC3B082F4B8A46005D3D67 /* ArticlesApp */;
-			targetProxy = 73EC3B232F4B8A47005D3D67 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -489,6 +423,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -499,6 +434,8 @@
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_OBJC_BRIDGING_HEADER = "";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -510,6 +447,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -520,48 +458,11 @@
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_OBJC_BRIDGING_HEADER = "";
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ArticlesApp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ArticlesApp";
-			};
-			name = Release;
-		};
-		73EC3B332F4B8A47005D3D67 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.ArticlesAppUITests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = ArticlesApp;
-			};
-			name = Debug;
-		};
-		73EC3B342F4B8A47005D3D67 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.ArticlesAppUITests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = ArticlesApp;
 			};
 			name = Release;
 		};
@@ -591,15 +492,6 @@
 			buildConfigurations = (
 				73EC3B302F4B8A47005D3D67 /* Debug */,
 				73EC3B312F4B8A47005D3D67 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		73EC3B322F4B8A47005D3D67 /* Build configuration list for PBXNativeTarget "ArticlesAppUITests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				73EC3B332F4B8A47005D3D67 /* Debug */,
-				73EC3B342F4B8A47005D3D67 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

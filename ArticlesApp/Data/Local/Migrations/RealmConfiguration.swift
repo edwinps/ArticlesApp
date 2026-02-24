@@ -13,9 +13,12 @@ enum RealmConfiguration {
     static func configure() {
         let config = Realm.Configuration(
             schemaVersion: schemaVersion,
-            migrationBlock: { _, oldSchemaVersion in
+            migrationBlock: { migration, oldSchemaVersion in
                 if oldSchemaVersion < schemaVersion {
-                    // no-op for now
+                    // Example to migration
+//                    migration.enumerateObjects(ofType: RealmArticle.className()) { oldObject, newObject in
+                        // newObject?["updatedAt"] = Date()
+//                    }
                 }
             }
         )

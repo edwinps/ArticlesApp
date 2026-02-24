@@ -6,13 +6,35 @@
 
 import Foundation
 
-enum NetworkError: Error, Sendable, LocalizedError {
+enum NetworkError: Error, Sendable, LocalizedError, Equatable {
     case invalidURL
     case transport(URLError)
     case nonHTTPResponse
     case httpStatus(Int, Data?)
     case decoding(Error)
     case offline
+    
+    static func == (lhs: NetworkError, rhs: NetworkError) -> Bool {
+        switch (lhs, rhs) {
+        case (.invalidURL, .invalidURL):
+            return true
+        case (.offline, .offline):
+            return true
+        case (.nonHTTPResponse, .nonHTTPResponse):
+            return true
+            
+        case (.httpStatus(let a, _), .httpStatus(let b, _)):
+            return a == b  
+            
+        case (.transport(let a), .transport(let b)):
+            return a.code == b.code
+            
+        case (.decoding, .decoding):
+            return true
+        default:
+            return false
+        }
+    }
 
     var errorDescription: String? {
         switch self {

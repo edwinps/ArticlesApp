@@ -6,8 +6,8 @@ protocol ArticlesStore: Sendable {
     func observeArticles(searchText: String?, author: String?) -> AsyncStream<[Article]>
     func observeArticles() -> AsyncStream<[Article]>
     func observeArticle(id: String) -> AsyncStream<Article?>
-    func upsert(articles: [Article]) async throws
-    func upsert(detail: Article) async throws
+    func update(articles: [Article]) async throws
+    func update(detail: Article) async throws
 }
 
 final class RealmArticlesStore: ArticlesStore {
@@ -23,8 +23,8 @@ final class RealmArticlesStore: ArticlesStore {
 
     func observeArticles(searchText: String?, author: String?) -> AsyncStream<[Article]> {
         let config = configuration
-        let q = searchText?.trimmingCharacters(in: .whitespacesAndNewlines)
-        let a = author?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmQuery = searchText?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmAuthor = author?.trimmingCharacters(in: .whitespacesAndNewlines)
 
         return AsyncStream { continuation in
             observeThread.perform {
@@ -34,17 +34,17 @@ final class RealmArticlesStore: ArticlesStore {
 
                         var predicates: [NSPredicate] = []
 
-                        if let q, !q.isEmpty {
+                        if let trimmQuery, !trimmQuery.isEmpty {
                             predicates.append(
                                 NSPredicate(
                                     format: "title CONTAINS[c] %@ OR summary CONTAINS[c] %@ OR author CONTAINS[c] %@",
-                                    q, q, q
+                                    trimmQuery, trimmQuery, trimmQuery
                                 )
                             )
                         }
 
-                        if let a, !a.isEmpty {
-                            predicates.append(NSPredicate(format: "author == %@", a))
+                        if let trimmAuthor, !trimmAuthor.isEmpty {
+                            predicates.append(NSPredicate(format: "author == %@", trimmAuthor))
                         }
 
                         let finalPredicate: NSPredicate? = predicates.isEmpty
@@ -54,8 +54,6 @@ final class RealmArticlesStore: ArticlesStore {
                         var results = realm.objects(RealmArticle.self)
                         if let finalPredicate { results = results.filter(finalPredicate) }
                         results = results.sorted(byKeyPath: "publishedAt", ascending: false)
-
-                        // Emit initial snapshot
                         continuation.yield(results.map { $0.toDomain() })
 
                         let token = results.observe { change in
@@ -125,7 +123,7 @@ final class RealmArticlesStore: ArticlesStore {
 
     // MARK: - Writing
 
-    func upsert(articles: [Article]) async throws {
+    func update(articles: [Article]) async throws {
         guard !articles.isEmpty else { return }
         let config = configuration
         let items = articles
@@ -150,7 +148,7 @@ final class RealmArticlesStore: ArticlesStore {
         }
     }
 
-    func upsert(detail: Article) async throws {
+    func update(detail: Article) async throws {
         let config = configuration
         let item = detail
 

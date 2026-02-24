@@ -2,9 +2,9 @@ import Foundation
 
 struct ForemArticlesAPI: ArticlesAPI {
     private let baseURLString = "https://dev.to/api/articles"
-    private let client: HTTPClient
+    private let client: HTTPClientProtocol
 
-    init(client: HTTPClient = HTTPClient()) {
+    init(client: HTTPClientProtocol  = HTTPClient()) {
         self.client = client
     }
 

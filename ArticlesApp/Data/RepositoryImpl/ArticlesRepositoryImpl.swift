@@ -16,10 +16,6 @@ final class ArticlesRepositoryImpl: ArticlesRepository {
         self.store = store
     }
 
-    func observeArticles(searchText: String?, author: String?) -> AsyncStream<[Article]> {
-        store.observeArticles(searchText: searchText, author: author)
-    }
-
     func observeArticles() -> AsyncStream<[Article]> {
         store.observeArticles()
     }
@@ -28,7 +24,7 @@ final class ArticlesRepositoryImpl: ArticlesRepository {
         store.observeArticle(id: id)
     }
 
-    func fetchArticles(page: Int, perPage: Int) async throws {
+    func fetchArticles(page: Int, perPage: Int) async throws -> Int {
         let dtos = try await api.fetchArticles(page: page, perPage: perPage)
 
         let articles = dtos.map { dto in
@@ -42,7 +38,8 @@ final class ArticlesRepositoryImpl: ArticlesRepository {
             )
         }
 
-        try await store.upsert(articles: articles)
+        try await store.update(articles: articles)
+        return dtos.count
     }
 
     func fetchArticleDetail(id: String) async throws {
@@ -57,7 +54,7 @@ final class ArticlesRepositoryImpl: ArticlesRepository {
             content: Self.preferredContentString(markdown: dto.bodyMarkdown, html: dto.bodyHTML)
         )
 
-        try await store.upsert(detail: article)
+        try await store.update(detail: article)
     }
 }
 

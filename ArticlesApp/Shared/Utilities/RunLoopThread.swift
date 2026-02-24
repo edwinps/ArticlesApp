@@ -14,13 +14,14 @@ final class RunLoopThread: NSObject {
     init(name: String) {
         thread = Thread { [ready] in
             Thread.current.name = name
-
+            Thread.current.qualityOfService = .userInitiated
             let runLoop = RunLoop.current
             runLoop.add(Port(), forMode: .default)
 
             ready.signal()
             runLoop.run()
         }
+        thread.qualityOfService = .userInitiated
         super.init()
         thread.start()
         ready.wait()

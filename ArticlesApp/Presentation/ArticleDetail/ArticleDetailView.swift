@@ -80,9 +80,6 @@ struct ArticleDetailView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding()
             }
-            .onDisappear {
-                Task { await viewModel.send(.stop) }
-            }
 
         } else if viewModel.isMissingOffline {
             ScrollView {

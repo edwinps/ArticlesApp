@@ -1,0 +1,39 @@
+{
+  "configurations" : [
+    {
+      "id" : "E3DB322D-FAB6-4017-889E-1B87D131BCC4",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverage" : {
+      "targets" : [
+        {
+          "containerPath" : "container:ArticlesApp.xcodeproj",
+          "identifier" : "73EC3B082F4B8A46005D3D67",
+          "name" : "ArticlesApp"
+        }
+      ]
+    },
+    "performanceAntipatternCheckerEnabled" : true,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:ArticlesApp.xcodeproj",
+      "identifier" : "73EC3B082F4B8A46005D3D67",
+      "name" : "ArticlesApp"
+    }
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:ArticlesApp.xcodeproj",
+        "identifier" : "73EC3B172F4B8A47005D3D67",
+        "name" : "ArticlesAppTests"
+      }
+    }
+  ],
+  "version" : 1
+}

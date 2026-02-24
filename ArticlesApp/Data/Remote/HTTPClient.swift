@@ -1,6 +1,10 @@
 import Foundation
 
-struct HTTPClient {
+protocol HTTPClientProtocol: Sendable {
+    func get<T: Decodable>(_ url: URL) async throws -> T
+}
+
+struct HTTPClient: HTTPClientProtocol  {
     private let session: URLSession
     private let decoder: JSONDecoder
     private let logger: AppLogger
@@ -25,7 +29,6 @@ struct HTTPClient {
 
         logger.info("HTTP GET start url=\(url.absoluteString)")
 
-        let start = Date()
         let data: Data
         let response: URLResponse
 
@@ -43,17 +46,16 @@ struct HTTPClient {
             throw NetworkError.transport(URLError(.unknown, userInfo: [NSUnderlyingErrorKey: error]))
         }
 
-        let elapsed = Int(Date().timeIntervalSince(start) * 1000)
 
         guard let httpResponse = response as? HTTPURLResponse else {
-            logger.error("HTTP GET non-HTTP response url=\(url.absoluteString) elapsedMs=\(elapsed)")
+            logger.error("HTTP GET non-HTTP response url=\(url.absoluteString)")
             throw NetworkError.nonHTTPResponse
         }
 
-        logger.info("HTTP GET response url=\(url.absoluteString) status=\(httpResponse.statusCode) bytes=\(data.count) elapsedMs=\(elapsed)")
+        logger.info("HTTP GET response url=\(url.absoluteString) status=\(httpResponse.statusCode)")
 
         guard (200...299).contains(httpResponse.statusCode) else {
-            logger.error("HTTP GET http error url=\(url.absoluteString) status=\(httpResponse.statusCode) bytes=\(data.count)")
+            logger.error("HTTP GET http error url=\(url.absoluteString) status=\(httpResponse.statusCode)")
             throw NetworkError.httpStatus(httpResponse.statusCode, data)
         }
 
